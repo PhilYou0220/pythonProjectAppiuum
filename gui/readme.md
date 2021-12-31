@@ -6,4 +6,6 @@ pyinstaller -F main.py 带控制台
 
 pyinstaller -i="h:\###.ico" -F -D ×××.py
 
-1
+pyinstaller -i="m4.ico" -F -w picture_download3.py
+
+尽量把相关的东西放在GUI包下

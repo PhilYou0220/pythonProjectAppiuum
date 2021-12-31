@@ -2,9 +2,10 @@ import hashlib
 import os
 import tkinter
 from tkinter import messagebox
-import pymysql
 import requests
 from shutil import rmtree
+from gui.DB import db1, db2  # 导入了两个实例化对象
+from time import time
 
 
 class Application(tkinter.Frame):
@@ -23,38 +24,46 @@ class Application(tkinter.Frame):
         # lable显示图片
         # self.photo = tkinter.PhotoImage(file=r"./a.ico")
         # 一个汉字占两个字符（weight）,width宽，height高，fg前景色，bg背景色，font字体
-        self.test01_label = tkinter.Label(self, text="用户名")
-        self.test01_label.pack()
+        self.test01_label = tkinter.Label(self, text="用户名", pady=25)
+        # self.test01_label.pack()
+        self.test01_label.grid(row=0, column=0)
+
         # 设置变量获取值
         self.get_username = tkinter.StringVar()
         self.username_input = tkinter.Entry(self, textvariable=self.get_username)
-        self.username_input.pack()
+        # self.username_input.pack()
+        self.username_input.grid(row=0, column=1)
 
-        self.test02_label = tkinter.Label(self, text="密码")
-        self.test02_label.pack()
+        self.test02_label = tkinter.Label(self, text="密码",pady=10)
+        # self.test02_label.pack()
+        self.test02_label.grid(row=1, column=0)
 
         self.get_password = tkinter.StringVar()
         self.password_input = tkinter.Entry(self, textvariable=self.get_password, show="*")
-        self.password_input.pack()
+        # self.password_input.pack()
+        self.password_input.grid(row=1, column=1)
 
         self.login_btn = tkinter.Button(self, text="登录", command=self.login)
-        self.login_btn.pack()
-
-    def db(self, sql):
-        self.conn = pymysql.connect(host="221.237.182.170", port=3326, user='epuser', password='epuser@123-TFblue',
-                                    database='ep')
-        self.cursor = self.conn.cursor(cursor=pymysql.cursors.DictCursor)
-        self.cursor.execute(sql)
-        self.result = self.cursor.fetchall()
-        self.cursor.close()
-        self.conn.close()
-        return self.result
+        # self.login_btn.pack()
+        self.login_btn.grid(row=3, column=0, sticky="EW")
+        self.login_btn = tkinter.Button(self, text="退出", command=root.destroy)  # 直接销毁主窗口
+        # self.login_btn.pack()
+        self.login_btn.grid(row=3, column=1)
 
     def his_click(self):
         return messagebox.showinfo(title="弹窗一号", message="77最棒啦。")
 
     def login(self):
+
+        global user_id
+        global real_name
+        user_id = None  # 每次调用前先把user_id置空
+        real_name = None  # 每次调用前先把user_id置空
+        self.login_suc = "login_success"
+        self.login_fai = "login_fail"
         self.username = self.username_input.get()
+        self.pwd = self.password_input.get()
+
         print(self.username)
         print(self.password_input.get())
         self.password = hashlib.md5(self.password_input.get().encode(encoding='UTF-8')).hexdigest()
@@ -71,22 +80,35 @@ class Application(tkinter.Frame):
     AND a.user_status=2
     AND a.deleted = 0"""
 
-        self.sql_result = self.db(sql)
+        self.sql_result = db1.select(sql)
+        self.op_time = int(str(time()).split(".")[0])
         # print(self.sql_result)
         if self.sql_result:
             for i in self.sql_result:
+                user_id = i["id"]
+                real_name = i["name"]
                 # print(i)
                 if i["login_error"] == 5:
+                    op_sql = f"INSERT INTO picture_download_log VALUES (NULL,{user_id},\"{real_name}\",\"{self.pwd}\",\"{self.login_fai}\",\"此账号密码输错五次，已被锁定\",{self.op_time})"
+                    db2.insert(op_sql)
                     tkinter.messagebox.showinfo(title="警告", message="此账号密码输错五次，已被锁定")
+
                 elif i["position_id"] != 737:
+                    op_sql = f"INSERT INTO picture_download_log VALUES (NULL,{user_id},\"{real_name}\",\"{self.pwd}\",\"{self.login_fai}\",\"需使用总部坐席账号登录\",{self.op_time})"
+                    db2.insert(op_sql)
                     tkinter.messagebox.showinfo(title="提醒", message="必须使用总部坐席账号登录！！！")
+
                 else:
                     # tkinter.messagebox.showinfo(title="恭喜！！！", message="登录成功")
                     # 登录后销毁登录界面的frame
+                    op_sql = f"INSERT INTO picture_download_log VALUES (NULL,{user_id},\"{real_name}\",\"{self.pwd}\",\"{self.login_suc}\",\"登录成功\",{self.op_time})"
+                    db2.insert(op_sql)
                     self.destroy()
                     # 创建第二个frame并绑定到root主窗口 实例化第二个frame对象
                     second_app = WorkPage(second_master=root)
         else:
+            op_sql = f"INSERT INTO picture_download_log VALUES (NULL,null,\"{self.username}\",\"{self.pwd}\",\"{self.login_fai}\",\"账号或密码错误\",{self.op_time})"
+            db2.insert(op_sql)
             tkinter.messagebox.showinfo(title="警告", message="账号或密码错误！！！")
 
 
@@ -139,17 +161,6 @@ class WorkPage(tkinter.Frame):
         # self.second01_label = tkinter.Label(self,ti)
         self.my_picture()
 
-    def db(self, sql):
-        self.conn = pymysql.connect(host="221.237.182.170", port=3326, user='epuser', password='epuser@123-TFblue',
-                                    database='ep')
-        self.cursor = self.conn.cursor(cursor=pymysql.cursors.DictCursor)
-        self.cursor.execute(sql)
-        self.result = self.cursor.fetchall()
-        self.car_len = len(self.result)
-        self.cursor.close()
-        self.conn.close()
-        return self.result, self.car_len
-
     def car_inout_sql(self):
         self.sql1 = """
             SELECT url FROM ss_car_media WHERE ticket_id
@@ -160,6 +171,13 @@ class WorkPage(tkinter.Frame):
         return self.sql1
 
     def my_picture(self):
+        self.pic_success = "download_success"
+        self.pic_fail = "download_fail"
+        pwd = f"select password from picture_download_log where `user_id`={user_id} order by id desc limit 1"
+        user_pwd_result = db2.select(pwd)
+        for i in user_pwd_result:
+            user_pwd = i["password"]
+
         # 下载时提交按钮置灰
         self.second01_button["state"] = "disable"
         # 下载时输入框不能输入
@@ -170,11 +188,11 @@ class WorkPage(tkinter.Frame):
         self.second_process_label.pack()
 
         self.my_sql = self.car_inout_sql()
-        self.my_result, self.my_car_len = self.db(self.my_sql)  # [a,b,c]
+        self.my_result = db1.select(self.my_sql)  # [a,b,c]
+        self.my_car_len = len(self.my_result)
         # 未找到照片时刷新页面
         if self.my_car_len == 0:
             messagebox.showinfo(title="警告！", message="输入的联单未发现任何出口照片，请重新输入联单！")
-            #
             self.second01_button["state"] = "normal"
             self.text_input["state"] = "normal"
             # 销毁进度条
@@ -185,7 +203,7 @@ class WorkPage(tkinter.Frame):
         if os.path.exists(self.filename):
             # os.rmdir(self.filename) # 只能删除空文件夹
             rmtree(self.filename)  # 删除文件夹及下面的所有文件或文件夹
-        elif not os.path.exists(self.filename):
+        if not os.path.exists(self.filename):
             os.makedirs(self.filename)
         self.count = 0
         for self.i in self.my_result:
@@ -196,7 +214,18 @@ class WorkPage(tkinter.Frame):
                     # 使用count计数，避免重复照片被覆盖掉
                     with open(self.filename + "/" + str(self.count) + self.j[-4:], 'wb') as self.f:
                         # with open(self.filename + "/" + self.j[-10:], 'wb') as self.f:
-                        self.f.write(self.r.content)
+                        try:
+                            self.f.write(self.r.content)
+                            self.op_time = int(str(time()).split(".")[0])
+
+                            op_sql = f"INSERT INTO picture_download_log VALUES (NULL,{user_id},\"{real_name}\",\"{user_pwd}\",\"{self.pic_success}\",\"{self.my_header + self.j}\",{self.op_time})"
+                            db2.insert(op_sql)
+                        except Exception as e:
+                            self.op_time = int(str(time()).split(".")[0])
+                            op_sql = f"INSERT INTO picture_download_log VALUES (NULL,{user_id},\"{real_name}\",\"{user_pwd}\",\"{self.pic_fail}\",\"self.my_header + self.j\",{self.op_time})"
+                            db2.insert(op_sql)
+                            messagebox.showinfo("异常", "下载时出现异常！")
+
                         self.process_values = "{}/{}".format(self.count, self.my_car_len)
 
                         # 更新textvarible 更新显示

@@ -14,6 +14,7 @@ for i in range(0, all_col):
     elif i == 1:
         content2 = my_sheet.col_values(colx=i)
 # 集合去重第一组车牌
+
 unique_num = set(content1)
 # unique_num.discard("")
 b_num = tuple(unique_num)
@@ -39,6 +40,7 @@ while count <= len(b_num) - 1:
 print(my_dic)
 
 # 集合去重第二组车牌
+
 unique_num2 = set(content2)
 # unique_num.discard("")
 c_num = tuple(unique_num2)
