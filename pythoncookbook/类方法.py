@@ -39,7 +39,7 @@ class A(object):
     # 4.普通方法
     def normal():
         print("我是普通方法返回")
-        # print()
+        # print()1
 
 
 
