@@ -15,7 +15,7 @@ def db(sql):
 
 
 if __name__ == '__main__':
-    for i in range(0, 201):
+    for i in range(0, 200):
         name = "flmtest0" + str(i)
         sql1 = f"""
         INSERT INTO `user` (`id`, `username`, `password`, `group_id`, `name`, `card_number`, `sex`, `birthday`, `address`, `phone`, `avatar`, `deleted_at`, `disabled`, `remark`, `created_at`, `branch_account`, `app_uuid`, `password_at`, `login_error_count`, `login_error_at`) VALUES (null, "{name}", '5b89073ac4d157f8bfcc2f57f95e7248', '2', '市级管理员', '', '0', '0', '', '', '', '0', '0', '', '0', '0', '', '1637206580', '0', '1639389206');
